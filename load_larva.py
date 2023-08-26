@@ -21,8 +21,6 @@ neurons_right["side"] = "right"
 neurons_right.rename(columns={"left_id": "lr_match_id"},inplace=True)
 neurons = pd.concat([neurons_left,neurons_right])
 
-N = len(neurons)
-
 conns = pd.read_csv(datapath+"Supplementary-Data-S1/all-all_connectivity_matrix.csv",index_col=0,dtype=int)
 assert((np.array(conns.columns.astype(int)) == np.array(conns.index)).all())
 #only select connections to/from identified neurons
@@ -31,5 +29,7 @@ conns = conns.iloc[validinds,:].iloc[:,validinds]
 #reorder neurons dataframe by connectivity matrix indices
 neurons = neurons.loc[conns.index]
 neurons = neurons.reset_index().rename(columns={"index": "id"})
+
+N = len(neurons)
 
 J = conns.to_numpy().T #transpose to enforce rows postsynaptic, columns presynaptic convention
