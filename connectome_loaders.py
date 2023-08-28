@@ -7,7 +7,7 @@ def load_flywire(datapath):
     """
     download "neurons," "connections," and "classification" from https://codex.flywire.ai/api/download and extract.
     datapath is a path (including trailing /) to this data.
-    returns: neurons, a dataframe containing neuron IDs and information and J, a synaptic connectivity matrix (rows postsynaptic)
+    returns: neurons, a dataframe containing neuron IDs and information and J, a synaptic connectivity matrix (rows postsynaptic). J is returned as a sparse matrix due to the size of the dataset.
     """
     neurons = pd.read_csv(datapath+"neurons.csv")
     classif = pd.read_csv(datapath+"classification.csv")
@@ -27,7 +27,7 @@ def load_flywire(datapath):
 def load_hemibrain(datapath, sparse=False):
     """
     download and extract the file labeled "a compact (44 MB) data model" from https://dvid.io/blog/release-v1.2.
-    datapath is a path (including trailing /) to this data.
+    datapath is a path (including trailing /) to this data. sparse=True returns the connectivity as a sparse matrix, sparse=False (default) returns a dense matrix (~4GB for 64-bit).
     returns: neurons, a dataframe containing neuron IDs and information and J, a synaptic connectivity matrix (rows postsynaptic)
     """
     neurons = pd.read_csv(datapath+"traced-neurons.csv")
