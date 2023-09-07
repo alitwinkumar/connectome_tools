@@ -13,6 +13,7 @@ import numpy as np
 from scipy import sparse 
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
+from connectome_loaders import *
 
 
 #%%
@@ -21,21 +22,8 @@ figurepath =''
 
 # Load data
 datapath=''
-
-neurons = pd.read_csv(datapath+"neurons.csv")
-classif = pd.read_csv(datapath+"classification.csv")
-neurons = neurons.merge(classif,on="root_id",how="left")
-conns = pd.read_csv(datapath+"connections.csv")
-
+neurons,_ = load_flywire(datapath)
 N = len(neurons)
-idhash = dict(zip(neurons.root_id,np.arange(N)))
-preinds = [idhash[x] for x in conns.pre_root_id]
-postinds = [idhash[x] for x in conns.post_root_id]
-
-#sparse matrix format
-from scipy.sparse import csr_matrix
-J = csr_matrix((conns.syn_count,(postinds,preinds)),shape=(N,N))
-
 
 #%%
 
@@ -120,6 +108,7 @@ for n in range(len(neurons)):
         
         
         
+conns = pd.read_csv(datapath+"connections.csv")
 nt_types = np.unique(conns.nt_type)
 nt_signs = {"GABA": -1, "GLUT": -1, "ACH": +1, "DA": 0, "OCT": 0, "SER": 0}
 

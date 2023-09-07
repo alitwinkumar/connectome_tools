@@ -80,8 +80,6 @@ def load_larva(datapath):
     neurons = neurons.loc[conns.index]
     neurons = neurons.reset_index().rename(columns={"index": "id"})
 
-    N = len(neurons)
-
     J = conns.to_numpy().T #transpose to enforce rows postsynaptic, columns presynaptic convention
 
     return neurons,J
