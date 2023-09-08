@@ -5,4 +5,6 @@ The file connectome_loaders.py contains functions that return synaptic connectiv
 
 The file plot_conn_flywire.py shows example code for visualizing and calculating connectivity statistics for the FlyWire connectome, including analyses grouped by neurotransmitter type.
 
+shuffle.py contains code for degree-matched shuffling of connectivity matrices and analysis of singular value spectra as compared to shuffles.
+
 
