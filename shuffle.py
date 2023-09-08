@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def shuf(J):
     """
@@ -15,7 +16,7 @@ def shuf(J):
 
     Jshuf = np.zeros([M,N])
     for ii in range(M):
-        inds = np.random.choice(N,indeg[ii],p=cprobs, replace=False)
+        inds = np.random.choice(N,indeg[ii],p=cprobs,replace=False)
         Jshuf[ii,inds] = 1
 
     return Jshuf
@@ -42,7 +43,7 @@ def compare_spectrum_shuf(J,shuf_func,Nshuf=200):
 
     plt.scatter(1+np.arange(R),s**2,color="k",s=5,zorder=2)
     plt.scatter(1+np.arange(R),m,color="gray",s=5,zorder=1)
-    plt.errorbar(1+np.arange(R),m,yerr=np.vstack([m-qmin,qmax-m]),ecolor="gray",ms=5,linewidth=1,capsize=1,linestyle="None",zorder=1)
+    plt.errorbar(1+np.arange(R),m,yerr=np.vstack([m-qmin,qmax-m]),ecolor="gray",capsize=1,linestyle="None",zorder=1)
 
     plt.xlabel("Component")
     plt.ylabel("Squared s.v.")
