@@ -16,6 +16,7 @@ def load_flywire(datapath):
 
     N = len(neurons)
     idhash = dict(zip(neurons.root_id,np.arange(N)))
+    neurons['J_idx'] = neurons['J_idx_post'] = neurons['J_idx_pre'] = neurons.root_id.apply(lambda x: idhash[x])
     preinds = [idhash[x] for x in conns.pre_root_id]
     postinds = [idhash[x] for x in conns.post_root_id]
 
@@ -35,6 +36,7 @@ def load_hemibrain(datapath, sparse=False):
 
     N = len(neurons)
     idhash = dict(zip(neurons.bodyId,np.arange(N)))
+    neurons['J_idx'] = neurons['J_idx_post'] = neurons['J_idx_pre'] = neurons.bodyId.apply(lambda x: idhash[x])
     preinds = [idhash[x] for x in conns.bodyId_pre]
     postinds = [idhash[x] for x in conns.bodyId_post]
 
@@ -79,6 +81,7 @@ def load_larva(datapath):
     #reorder neurons dataframe by connectivity matrix indices
     neurons = neurons.loc[conns.index]
     neurons = neurons.reset_index().rename(columns={"index": "id"})
+    neurons['J_idx'] = neurons['J_idx_post'] = neurons['J_idx_pre'] = neurons.index
 
     J = conns.to_numpy().T #transpose to enforce rows postsynaptic, columns presynaptic convention
 
