@@ -2,8 +2,9 @@ import scipy
 import pandas as pd
 def filter_connectivity(filtered_neurons_pre, filtered_neurons_post, J):
     """
-    Filter the connectivity matrix to only include presynaptic neurons in filtered_neurons_pre, and post synaptic neurons in filtered_neurons_post.
-    datapath is a path (including trailing /) to this data.
+    Filter the connectivity matrix, J, to only include presynaptic neurons in filtered_neurons_pre, and post synaptic neurons in filtered_neurons_post.
+    filtered_neurons_pre and filtered_neurons_post are dataframes as loaded by connectome_loaders.py
+    J is a sparse or dense connectivity matrix, as returned by connectome_loaders.py, or previous passes to filter_connectivity.
     returns: 
         neurons, a dataframe containing included neuron IDs and information with J_idx_pre and J_idx_post updated to match the filtered J matrix, with -1 indicating not included
         J, a synaptic connectivity matrix (rows postsynaptic) containing only connections between the selected pre and post synaptic neurons
