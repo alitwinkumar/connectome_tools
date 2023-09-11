@@ -7,4 +7,6 @@ The file plot_conn_flywire.py shows example code for visualizing and calculating
 
 shuffle.py contains code for degree-matched shuffling of connectivity matrices and analysis of singular value spectra as compared to shuffles.
 
+filter_connectivity.py contains code for (efficiently in the case of sparse matrices) subselecting the connectivity matrix from filtered sets of pre and post synaptic neurons.
+
 
