@@ -9,4 +9,6 @@ shuffle.py contains code for degree-matched shuffling of connectivity matrices a
 
 filter_connectivity.py contains code for (efficiently in the case of sparse matrices) subselecting the connectivity matrix from filtered sets of pre and post synaptic neurons.
 
+`influence_metrics` contains code for ranking neurons in a connectome graph based on influence in behaviorally-relevant pathways. 
+
 
