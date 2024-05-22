@@ -2,7 +2,7 @@
 This repository contains tools for analyzing synaptic connectivity data.
 
 ## installation
-to install, clone this repo by running `git@github.com:alitwinkumar/connectome_tools.git` and then within connectome_tools with the environment you want to install it in active, run `pip install -e .`
+to install, clone this repo by running `git clone git@github.com:alitwinkumar/connectome_tools.git` and then within connectome_tools with the environment you want to install it in active, run `pip install -e .`
 
 ## files
 
