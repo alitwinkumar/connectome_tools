@@ -1,15 +1,17 @@
 import scipy
 import pandas as pd
-def filter_connectivity(filtered_neurons_pre, filtered_neurons_post, J):
+def filter_connectivity(filtered_neurons_pre, filtered_neurons_post, J,nts_Js = None):
     """
     Filter the connectivity matrix, J, to only include presynaptic neurons in filtered_neurons_pre, and post synaptic neurons in filtered_neurons_post.
     filtered_neurons_pre and filtered_neurons_post are dataframes as loaded by connectome_loaders.py
     J is a sparse or dense connectivity matrix, as returned by connectome_loaders.py, or previous passes to filter_connectivity.
+    nts_Js is a dictionary of sparse or dense connectivity matrices, as returned by connectome_loaders.py when by_nts is True, or by previous passes to filter_connectivity with nts_Js included
     returns: 
         neurons, a dataframe containing included neuron IDs and information with J_idx_pre and J_idx_post updated to match the filtered J matrix, with -1 indicating not included
-        J, a synaptic connectivity matrix (rows postsynaptic) containing only connections between the selected pre and post synaptic neurons
+        filtered_J, a synaptic connectivity matrix (rows postsynaptic) containing only connections between the selected pre and post synaptic neurons
         filtered_neurons_pre, the passed in filtered_neurons_pre with updated 'J_idx_pre' and removed 'J_idx_post'
         filtered_neurons_post, the passed in filtered_neurons_post with updated 'J_idx_post' and removed 'J_idx_pre'
+        filtered_nts_Js (optional, if nts_Js is passed in), a dictionary of synapic connectivity matrices by neurotransmitter (rows postsynaptic) with each matrix containing only connections between the selected pre and post synaptic neurons
     """
     
     # copy pre and post neuron data frames to avoid pandas warnings if the passed in dataframes are a view
@@ -21,6 +23,14 @@ def filter_connectivity(filtered_neurons_pre, filtered_neurons_post, J):
         filtered_J = J.tocsr()[filtered_neurons_post.J_idx_post].tocsc()[:,filtered_neurons_pre.J_idx_pre].tocsr()
     else:
         filtered_J = J[filtered_neurons_post.J_idx_post][:,filtered_neurons_pre.J_idx_pre]
+
+    if nts_Js is not None:
+        filtered_nts_Js = {}
+        for key, val in nts_Js.items():
+            if scipy.sparse.issparse(val):
+                filtered_nts_Js[key] = val.tocsr()[filtered_neurons_post.J_idx_post].tocsc()[:,filtered_neurons_pre.J_idx_pre].tocsr()
+            else:
+                filtered_nts_Js[key] = val[filtered_neurons_post.J_idx_post][:,filtered_neurons_pre.J_idx_pre]
 
     # Update J_idx_pre and drop J_idx_post for filtered_neurons_pre, and vice versa for filtered_neurons_post
     filtered_neurons_pre["J_idx_pre"]=filtered_neurons_pre.reset_index().index
@@ -34,4 +44,6 @@ def filter_connectivity(filtered_neurons_pre, filtered_neurons_post, J):
     neurons = pd.merge(filtered_neurons_post, filtered_neurons_pre, how='outer')
     neurons['J_idx_post'] = neurons.J_idx_post.fillna(-1).astype('int')
     neurons['J_idx_pre'] = neurons.J_idx_pre.fillna(-1).astype('int')
-    return neurons, filtered_J, filtered_neurons_pre, filtered_neurons_post
+    if nts_Js is None:
+        return neurons, filtered_J, filtered_neurons_pre, filtered_neurons_post
+    return neurons, filtered_J, filtered_neurons_pre, filtered_neurons_post, filtered_nts_Js

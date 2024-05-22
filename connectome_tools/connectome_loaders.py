@@ -3,16 +3,58 @@ import pandas as pd
 from scipy.sparse import csr_matrix
 
 
-def load_flywire(datapath):
+def load_flywire(datapath, by_nts = False, include_spatial=False):
     """
     download "neurons," "connections," and "classification" from https://codex.flywire.ai/api/download and extract.
     datapath is a path (including trailing /) to this data.
-    returns: neurons, a dataframe containing neuron IDs and information and J, a synaptic connectivity matrix (rows postsynaptic). J is returned as a sparse matrix due to the size of the dataset.
+    by_nts is a bool indicating whether to return a dictionary of J split up by neurotransmitter.
+    returns: neurons, J, and, if by_nts, nts_J
+        neurons: a dataframe containing neuron IDs and information
+        J: a synpatic connectivity matrix (rows postsynaptic). J is returned as a sparse matrix due to the size of the dataset.
+        nts_J: a dictionary of synaptic connectivity matrices by neurotransmitter type. Together, they sum to J. Only returned if by_nts is True.
+
     """
     neurons = pd.read_csv(datapath+"neurons.csv")
     classif = pd.read_csv(datapath+"classification.csv")
     neurons = neurons.merge(classif,on="root_id",how="left")
     conns = pd.read_csv(datapath+"connections.csv")
+    if include_spatial:
+        coordinates = pd.read_csv(datapath+'coordinates.csv')
+
+        # commenting out synpase coords since the root ids don't match.
+        # syn_coordinates = pd.read_csv(datapath+'synapse_coordinates.csv')
+
+
+        # syn_coordinates = syn_coordinates.fillna(method='ffill')
+
+        # presyn_coor = syn_coordinates.groupby('pre_root_id').mean().reset_index().drop(['post_root_id'], axis=1)
+        # presyn_coorVar = syn_coordinates.groupby('pre_root_id').var().reset_index().drop(['post_root_id'], axis=1)
+        # presyn_coor.insert(4, "rho", presyn_coorVar[['x','y','z']].T.sum().pow(0.5))
+        # presyn_coor.astype({'pre_root_id': 'int64'})
+
+        # postsyn_coor = syn_coordinates.groupby('post_root_id').mean().reset_index().drop(['pre_root_id'], axis=1)
+        # postsyn_coorVar = syn_coordinates.groupby('post_root_id').var().reset_index().drop(['pre_root_id'], axis=1)
+        # postsyn_coor.insert(4, "rho", postsyn_coorVar[['x','y','z']].T.sum().pow(0.5))
+        # postsyn_coor.astype({'post_root_id': 'int64'})
+
+        neur_coor = pd.DataFrame({"root_id":[], "x":[], "y":[], "z":[]})
+        ll = coordinates['position']
+        xx_ = [ int(l[1:-1].split()[0]) for l in ll]
+        yy_ = [ int(l[1:-1].split()[1]) for l in ll]
+        zz_ = [ int(l[1:-1].split()[2]) for l in ll]
+
+        neur_coor["root_id"]=coordinates['root_id']
+        neur_coor["x"]=xx_
+        neur_coor["y"]=yy_
+        neur_coor["z"]=zz_
+
+        neur_coor = neur_coor.groupby('root_id').mean().reset_index()
+
+        neurons = neurons.merge(neur_coor,on="root_id",how="left")
+        # neurons = neurons.merge(presyn_coor,left_on="root_id", right_on="pre_root_id",how="left", suffixes=['','_presyn']).drop('pre_root_id', axis=1)
+        # neurons = neurons.merge(postsyn_coor,left_on="root_id",right_on="post_root_id",how="left", suffixes=['','_postsyn']).drop('post_root_id', axis=1)
+
+
 
     N = len(neurons)
     idhash = dict(zip(neurons.root_id,np.arange(N)))
@@ -22,7 +64,18 @@ def load_flywire(datapath):
 
     J = csr_matrix((conns.syn_count,(postinds,preinds)),shape=(N,N))
 
-    return neurons,J
+    if not by_nts:
+        return neurons,J
+    
+    nts_Js = {}
+    for name, group in conns.groupby('nt_type', dropna=False):
+        if type(name) == float:
+            name = 'nan'
+        preinds = [idhash[x] for x in group.pre_root_id]
+        postinds = [idhash[x] for x in group.post_root_id]
+        nts_Js[name] =  csr_matrix((group.syn_count,(postinds,preinds)),shape=(N,N))
+
+    return neurons, J, nts_Js
 
 
 def load_hemibrain(datapath, sparse=False):
