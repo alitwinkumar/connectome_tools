@@ -41,20 +41,20 @@ def load_flywire(datapath, by_nts = False, include_spatial=False, J_matrix_dtype
         coordinates = _attempt_load('coordinates.csv')
 
         # commenting out synpase coords since the root ids don't match.
-        # syn_coordinates = pd.read_csv('synapse_coordinates.csv')
+        syn_coordinates = _attempt_load('synapse_coordinates.csv')
 
 
-        # syn_coordinates = syn_coordinates.fillna(method='ffill')
+        syn_coordinates = syn_coordinates.ffill()
 
-        # presyn_coor = syn_coordinates.groupby('pre_root_id').mean().reset_index().drop(['post_root_id'], axis=1)
-        # presyn_coorVar = syn_coordinates.groupby('pre_root_id').var().reset_index().drop(['post_root_id'], axis=1)
-        # presyn_coor.insert(4, "rho", presyn_coorVar[['x','y','z']].T.sum().pow(0.5))
-        # presyn_coor.astype({'pre_root_id': 'int64'})
+        presyn_coor = syn_coordinates.groupby('pre_root_id').mean().reset_index().drop(['post_root_id'], axis=1)
+        presyn_coorVar = syn_coordinates.groupby('pre_root_id').var().reset_index().drop(['post_root_id'], axis=1)
+        presyn_coor.insert(4, "rho_presyn", presyn_coorVar[['x','y','z']].T.sum().pow(0.5))
+        presyn_coor.astype({'pre_root_id': 'int64'})
 
-        # postsyn_coor = syn_coordinates.groupby('post_root_id').mean().reset_index().drop(['pre_root_id'], axis=1)
-        # postsyn_coorVar = syn_coordinates.groupby('post_root_id').var().reset_index().drop(['pre_root_id'], axis=1)
-        # postsyn_coor.insert(4, "rho", postsyn_coorVar[['x','y','z']].T.sum().pow(0.5))
-        # postsyn_coor.astype({'post_root_id': 'int64'})
+        postsyn_coor = syn_coordinates.groupby('post_root_id').mean().reset_index().drop(['pre_root_id'], axis=1)
+        postsyn_coorVar = syn_coordinates.groupby('post_root_id').var().reset_index().drop(['pre_root_id'], axis=1)
+        postsyn_coor.insert(4, "rho_postsyn", postsyn_coorVar[['x','y','z']].T.sum().pow(0.5))
+        postsyn_coor.astype({'post_root_id': 'int64'})
 
         neur_coor = pd.DataFrame({"root_id":[], "x":[], "y":[], "z":[]})
         ll = coordinates['position']
@@ -70,8 +70,8 @@ def load_flywire(datapath, by_nts = False, include_spatial=False, J_matrix_dtype
         neur_coor = neur_coor.groupby('root_id').mean().reset_index()
 
         neurons = neurons.merge(neur_coor,on="root_id",how="left")
-        # neurons = neurons.merge(presyn_coor,left_on="root_id", right_on="pre_root_id",how="left", suffixes=['','_presyn']).drop('pre_root_id', axis=1)
-        # neurons = neurons.merge(postsyn_coor,left_on="root_id",right_on="post_root_id",how="left", suffixes=['','_postsyn']).drop('post_root_id', axis=1)
+        neurons = neurons.merge(presyn_coor,left_on="root_id", right_on="pre_root_id",how="left", suffixes=['','_presyn']).drop('pre_root_id', axis=1)
+        neurons = neurons.merge(postsyn_coor,left_on="root_id",right_on="post_root_id",how="left", suffixes=['','_postsyn']).drop('post_root_id', axis=1)
 
 
 
