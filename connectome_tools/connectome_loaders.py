@@ -1,28 +1,47 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 
 
-def load_flywire(datapath, by_nts = False, include_spatial=False):
-    """
-    download "neurons," "connections," and "classification" from https://codex.flywire.ai/api/download and extract.
-    datapath is a path (including trailing /) to this data.
-    by_nts is a bool indicating whether to return a dictionary of J split up by neurotransmitter.
-    returns: neurons, J, and, if by_nts, nts_J
-        neurons: a dataframe containing neuron IDs and information
-        J: a synpatic connectivity matrix (rows postsynaptic). J is returned as a sparse matrix due to the size of the dataset.
-        nts_J: a dictionary of synaptic connectivity matrices by neurotransmitter type. Together, they sum to J. Only returned if by_nts is True.
+def load_flywire(datapath, by_nts = False, include_spatial=False, J_matrix_dtype="int16"):
+    """Load the flywire connectome dataset.
+    You will need to manually download files from https://codex.flywire.ai/api/download and extract.
+    The required files are "neurons.csv", "connections.csv", and "classification.csv".
+    If you want to include spatial information, you will also need to download "coordinates.csv".
 
+    Args:
+        datapath (path-like): Local path for dataset.
+        by_nts (bool, optional): Whether to also return a dictionary mapping neurotransmitter type to a J matrix for those transmitters. Defaults to False.
+        include_spatial (bool, optional): Whether to include neuron position information. Defaults to False.
+        J_matrix_dtype (str, optional): Data type for the synaptic connectivity matrix. Defaults to "int16". Sparse matrix default is int64 but max synapse count appears to be 2405 so we can save some space.
+
+    Returns:
+        tuple:
+            - neurons (pd.DataFrame): a dataframe containing neuron IDs and information
+            - J (sparse row matrix): a synaptic connectivity matrix (rows postsynaptic; i.e., J[post, pre] = syn count from pre to post)
+            - nts_J (dict, only returned if by_nts is True): a dictionary of synaptic connectivity matrices by neurotransmitter type. Together, they sum to J.
     """
-    neurons = pd.read_csv(datapath+"neurons.csv")
-    classif = pd.read_csv(datapath+"classification.csv")
-    neurons = neurons.merge(classif,on="root_id",how="left")
-    conns = pd.read_csv(datapath+"connections.csv")
+    if type(datapath) is str:
+        datapath = Path(datapath)
+
+    # Helper method to attempt to load a file and print error message if it doesn't exist
+    def _attempt_load(filename):
+        path = datapath / filename
+        if not path.exists():
+            raise FileNotFoundError(f"Could not load {filename} from {datapath}. Please download the data from https://codex.flywire.ai/api/download and extract.")
+        return pd.read_csv(path)
+
+    neurons = _attempt_load("neurons.csv")
+    classif = _attempt_load("classification.csv")
+    neurons = neurons.merge(classif, on="root_id", how="left")
+    conns = _attempt_load("connections.csv")
     if include_spatial:
-        coordinates = pd.read_csv(datapath+'coordinates.csv')
+        coordinates = _attempt_load('coordinates.csv')
 
         # commenting out synpase coords since the root ids don't match.
-        # syn_coordinates = pd.read_csv(datapath+'synapse_coordinates.csv')
+        # syn_coordinates = pd.read_csv('synapse_coordinates.csv')
 
 
         # syn_coordinates = syn_coordinates.fillna(method='ffill')
@@ -61,11 +80,10 @@ def load_flywire(datapath, by_nts = False, include_spatial=False):
     neurons['J_idx'] = neurons['J_idx_post'] = neurons['J_idx_pre'] = neurons.root_id.apply(lambda x: idhash[x])
     preinds = [idhash[x] for x in conns.pre_root_id]
     postinds = [idhash[x] for x in conns.post_root_id]
-
-    J = csr_matrix((conns.syn_count,(postinds,preinds)),shape=(N,N))
+    J = csr_matrix((conns.syn_count, (postinds, preinds)), shape=(N, N), dtype=J_matrix_dtype)
 
     if not by_nts:
-        return neurons,J
+        return neurons, J
     
     nts_Js = {}
     for name, group in conns.groupby('nt_type', dropna=False):
@@ -73,7 +91,7 @@ def load_flywire(datapath, by_nts = False, include_spatial=False):
             name = 'nan'
         preinds = [idhash[x] for x in group.pre_root_id]
         postinds = [idhash[x] for x in group.post_root_id]
-        nts_Js[name] =  csr_matrix((group.syn_count,(postinds,preinds)),shape=(N,N))
+        nts_Js[name] =  csr_matrix((group.syn_count, (postinds, preinds)), shape=(N, N), dtype=J_matrix_dtype)
 
     return neurons, J, nts_Js
 
@@ -81,11 +99,13 @@ def load_flywire(datapath, by_nts = False, include_spatial=False):
 def load_hemibrain(datapath, sparse=False):
     """
     download and extract the file labeled "a compact (44 MB) data model" from https://dvid.io/blog/release-v1.2.
-    datapath is a path (including trailing /) to this data. sparse=True returns the connectivity as a sparse matrix, sparse=False (default) returns a dense matrix (~4GB for 64-bit).
+    datapath is a path to this data. sparse=True returns the connectivity as a sparse matrix, sparse=False (default) returns a dense matrix (~4GB for 64-bit).
     returns: neurons, a dataframe containing neuron IDs and information and J, a synaptic connectivity matrix (rows postsynaptic)
     """
-    neurons = pd.read_csv(datapath+"traced-neurons.csv")
-    conns = pd.read_csv(datapath+"traced-total-connections.csv")
+    if type(datapath) is str:
+        datapath = Path(datapath)
+    neurons = pd.read_csv(datapath / "traced-neurons.csv")
+    conns = pd.read_csv(datapath / "traced-total-connections.csv")
 
     N = len(neurons)
     idhash = dict(zip(neurons.bodyId,np.arange(N)))
@@ -106,10 +126,12 @@ def load_hemibrain(datapath, sparse=False):
 def load_larva(datapath):
     """
     download and extract supplemental information from Winding et al. (2023) "The connectome of an insect brain." at https://www.science.org/doi/10.1126/science.add9330#supplementary-materials.
-    datapath is a path (including trailing /) to this data.
+    datapath is a path to this data.
     returns: neurons, a dataframe containing neuron IDs and information and J, a synaptic connectivity matrix (rows postsynaptic)
     """
-    neurons_all = pd.read_csv(datapath+"science.add9330_data_s2.csv")
+    if type(datapath) is str:
+        datapath = Path(datapath)
+    neurons_all = pd.read_csv(datapath / "science.add9330_data_s2.csv")
 
     #convert to integer, unpaired neurons assigned index of -1
     neurons_all.left_id[neurons_all.left_id == "no pair"] = "-1"
@@ -126,7 +148,7 @@ def load_larva(datapath):
     neurons_right.rename(columns={"left_id": "lr_match_id"},inplace=True)
     neurons = pd.concat([neurons_left,neurons_right])
 
-    conns = pd.read_csv(datapath+"Supplementary-Data-S1/all-all_connectivity_matrix.csv",index_col=0,dtype=int)
+    conns = pd.read_csv(datapath / "Supplementary-Data-S1" / "all-all_connectivity_matrix.csv", index_col=0, dtype=int)
     assert((np.array(conns.columns.astype(int)) == np.array(conns.index)).all())
     #only select connections to/from identified neurons
     validinds = np.isin(conns.index,neurons.index) 

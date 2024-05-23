@@ -1,5 +1,6 @@
 import scipy
 import pandas as pd
+
 def filter_connectivity(filtered_neurons_pre, filtered_neurons_post, J,nts_Js = None):
     """
     Filter the connectivity matrix, J, to only include presynaptic neurons in filtered_neurons_pre, and post synaptic neurons in filtered_neurons_post.
