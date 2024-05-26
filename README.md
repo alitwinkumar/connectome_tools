@@ -34,8 +34,3 @@ The `-e` flag will make the package editable, so any changes made to the package
 `filter_connectivity.py` contains code for (efficiently in the case of sparse matrices) subselecting the connectivity matrix from filtered sets of pre and post synaptic neurons.
 
 `influence_metrics` contains code for ranking neurons in a connectome graph based on influence in behaviorally-relevant pathways. 
-
-## Examples
-The `examples` folder showcases some examples.
-
-`plot_conn_flywire` shows example code for visualizing and calculating connectivity statistics for the FlyWire connectome, including analyses grouped by neurotransmitter type.
