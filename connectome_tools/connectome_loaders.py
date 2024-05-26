@@ -9,7 +9,7 @@ def load_flywire(datapath, by_nts = False, include_spatial=False, J_matrix_dtype
     """Load the flywire connectome dataset.
     You will need to manually download files from https://codex.flywire.ai/api/download and extract.
     The required files are "neurons.csv", "connections.csv", and "classification.csv".
-    If you want to include spatial information, you will also need to download "coordinates.csv".
+    If you want to include spatial information, you will also need to download "coordinates.csv" and "synapse_coordinates.csv".
 
     Args:
         datapath (path-like): Local path for dataset.
@@ -20,14 +20,16 @@ def load_flywire(datapath, by_nts = False, include_spatial=False, J_matrix_dtype
     Returns:
         tuple:
             - neurons (pd.DataFrame): a dataframe containing neuron IDs and information in the following columns:
-                - 'nt_type_score', 'da_avg', 'ser_avg', 'gaba_avg', 'glut_avg', 'ach_avg', 'oct_avg' are the neurotransmitter prediction score from neurons.csv. 
                 - 'root_id': unique identifier for each neuron. You can find search using this identifier in [flywire.ai](flywire.ai)
                 - 'group': auto-generated group (based on primary input and output neuropils)
-                - 'nt_type': from neurons.csv -- the predicted neurotransmitter type
+                - 'nt_type': the predicted neurotransmitter type
+                - 'nt_type_score': the probability associated with the predicted neurotransmitter type (i.e., the maximum of 'da_avg', 'ser_avg', 'gaba_avg', 'glut_avg', 'ach_avg', 'oct_avg')
+                - 'da_avg', 'ser_avg', 'gaba_avg', 'glut_avg', 'ach_avg', 'oct_avg' are the neurotransmitter predictions (expressed as probabilities for each neurotransmitter type) 
                 - 'flow', 'super_class', 'class', 'sub_class', 'cell_type', 'hemibrain_type', 'hemilineage', 'side', 'nerve': From classification.csv. See description on the [download page](https://codex.flywire.ai/api/download). These tend to be the most useful for selecting subsets of neurons.
                 - 'x', 'y', 'z': From coordinates.csv -- "Marked neuron coordinates. FlyWire Supervoxel IDs and position coordinates (in nanometers) for cells in the dataset. One cell might have zero or more coordinates and supervoxel IDs, depending on marked positions during human proofreading / cell identification. The coordinates usually point to spots that were most useful for human review, and not necessarily to the cell body / soma. "
-                - 'x_presyn', 'y_presyn', 'z_presyn','x_postsyn', 'y_postsyn', 'z_postsyn': Average synapse locations for each neuron, from synapse_coordinates.csv. '_presyn' is the average of the outgoing synapses, and '_postsyn' is the average of the incoming synapses.
+                - 'x_presyn', 'y_presyn', 'z_presyn','x_postsyn', 'y_postsyn', 'z_postsyn': Average synapse locations for each neuron, calculated from synapse_coordinates.csv. '_presyn' is the average of the outgoing synapses, and '_postsyn' is the average of the incoming synapses.
                 - 'rho_presyn' and 'rho_postsyn' are the standard deviation of outgoing and incoming synapse locations respectively.
+                - 'J_idx', 'J_idx_post', 'J_idx_pre': The correspondence between the index in the connectivity matrix J and the entries in the dataframe. When initially loaded, these three columns are identical, but this may change if the filter_connectivity function is called later.
             - J (sparse row matrix): a synaptic connectivity matrix (rows postsynaptic; i.e., J[post, pre] = syn count from pre to post)
             - nts_J (dict, only returned if by_nts is True): a dictionary of synaptic connectivity matrices by neurotransmitter type. Together, they sum to J.
     """
