@@ -20,7 +20,7 @@ def load_flywire(datapath, by_nts = False, include_spatial=False, J_matrix_dtype
     Returns:
         tuple:
             - neurons (pd.DataFrame): a dataframe containing neuron IDs and information in the following columns:
-                - 'root_id': unique identifier for each neuron. You can find search using this identifier in [flywire.ai](flywire.ai)
+                - 'root_id': unique identifier for each neuron. You can search using this identifier in [flywire.ai](flywire.ai)
                 - 'group': auto-generated group (based on primary input and output neuropils)
                 - 'nt_type': the predicted neurotransmitter type
                 - 'nt_type_score': the probability associated with the predicted neurotransmitter type (i.e., the maximum of 'da_avg', 'ser_avg', 'gaba_avg', 'glut_avg', 'ach_avg', 'oct_avg')
